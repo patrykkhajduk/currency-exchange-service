@@ -1,0 +1,15 @@
+version: '4.0'
+
+services:
+  postgres:
+    image: postgres:17.2
+    restart: always
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    logging:
+      options:
+        max-size: 10m
+        max-file: "3"
+    ports:
+      - 5432:5432

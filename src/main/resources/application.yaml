@@ -1,0 +1,52 @@
+server:
+  servlet:
+    context-path: ${ROOT_PATH:/currency-exchange}
+
+spring:
+  application:
+    name: currency-exchange
+  jackson:
+    property-naming-strategy: SNAKE_CASE
+    serialization:
+      write-dates-as-timestamps: false
+      indent_output: true
+    deserialization:
+      fail-on-unknown-properties: false
+      fail-on-numbers-for-enums: true
+    default-property-inclusion: NON_NULL
+  servlet:
+    multipart:
+      # currently we don't need more than 1KB
+      max-request-size: 1KB
+  datasource:
+    url: ${POSTGRES_JDBC_URL:}
+    password: ${POSTGRES_PASS:}
+    username: ${POSTGRES_USER:}
+    initialization-mode: always
+    hikari:
+      connection-timeout: ${DB_CONNECTION_TIMEOUT:15000}
+      idle-timeout: ${DB_IDLE_TIMEOUT:60000}
+      max-lifetime: ${DB_MAX_LIFETIME:1800000}
+      minimum-idle: ${DB_MINIMUM_IDLE:10}
+      maximum-pool-size: ${DB_MAXIMUM_POOL_SIZE:50}
+  jpa:
+    show-sql: ${SHOW_SQL:false}
+    hibernate:
+      ddl-auto: none
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    properties:
+      hibernate:
+        format_sql: true
+  liquibase:
+    change-log: classpath:db/changelog/db.changelog-master.yaml
+    url: ${POSTGRES_JDBC_URL:}
+    user: ${LIQUIBASE_POSTGRES_USER:}
+    password: ${LIQUIBASE_POSTGRES_PASS:}
+
+springdoc:
+  api-docs:
+    enabled: ${SWAGGER_ENABLED:false}
+    path: /api-spec/v3/api-docs
+  swagger-ui:
+    enabled: ${SWAGGER_ENABLED:false}
+    path: /api-spec/swagger-ui.html

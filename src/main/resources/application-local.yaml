@@ -1,0 +1,15 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/postgres
+    password: postgres
+    username: postgres
+  liquibase:
+    url: jdbc:postgresql://localhost:5432/postgres
+    user: postgres
+    password: postgres
+
+springdoc:
+  api-docs:
+    enabled: true
+  swagger-ui:
+    enabled: true
