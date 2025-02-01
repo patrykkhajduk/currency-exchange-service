@@ -1,1 +1,5 @@
 databaseChangeLog:
+  - include:
+      file: classpath:/db/changelog/changelogs/db.changelog-envers-base-tables.sql
+  - include:
+      file: classpath:/db/changelog/changelogs/db.changelog-currency-exchange-account.sql

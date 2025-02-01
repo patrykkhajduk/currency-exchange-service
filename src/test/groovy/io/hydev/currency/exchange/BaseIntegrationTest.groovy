@@ -1,6 +1,12 @@
 package io.hydev.currency.exchange
 
+import com.fasterxml.jackson.databind.ObjectMapper
 import io.restassured.RestAssured
+import io.restassured.config.ObjectMapperConfig
+import io.restassured.config.RestAssuredConfig
+import io.restassured.filter.log.RequestLoggingFilter
+import io.restassured.filter.log.ResponseLoggingFilter
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.web.server.LocalServerPort
@@ -22,10 +28,13 @@ abstract class BaseIntegrationTest extends Specification {
             .withPassword("secret")
 
     @LocalServerPort
-    int port
+    private int port
 
     @Value('${server.servlet.context-path}')
-    String contextPath
+    private String contextPath
+
+    @Autowired
+    protected ObjectMapper objectMapper
 
     def setupSpec() {
         postgresContainer.start()
@@ -34,6 +43,10 @@ abstract class BaseIntegrationTest extends Specification {
     def setup() {
         RestAssured.port = port
         RestAssured.baseURI = "http://localhost:$port$contextPath"
+//        RestAssuredConfig.config()
+//                .objectMapperConfig(new ObjectMapperConfig()
+//                        .jackson2ObjectMapperFactory((aClass, s) -> objectMapper))
+        RestAssured.filters(new RequestLoggingFilter(), new ResponseLoggingFilter());
     }
 
     @DynamicPropertySource
