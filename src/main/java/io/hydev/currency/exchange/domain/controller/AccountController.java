@@ -1,6 +1,7 @@
 package io.hydev.currency.exchange.domain.controller;
 
 import io.hydev.currency.exchange.domain.controller.model.AccountDto;
+import io.hydev.currency.exchange.domain.controller.model.AccountSearchResultDto;
 import io.hydev.currency.exchange.domain.controller.model.CreateAccountRequest;
 import io.hydev.currency.exchange.domain.controller.model.ExchangeCurrenciesRequest;
 import io.hydev.currency.exchange.domain.controller.model.validator.CreateCurrencyExchangeAccountRequestValidator;
@@ -35,7 +36,7 @@ public class AccountController {
     private final AccountService accountService;
 
     @GetMapping
-    public ResponseEntity<Page<AccountDto>> findAllAccounts(
+    public ResponseEntity<Page<AccountSearchResultDto>> findAllAccounts(
             @RequestParam(value = "pageNumber", defaultValue = "0")
             @PositiveOrZero(message = "Page number must be positive or zero")
             int pageNumber,
@@ -44,7 +45,7 @@ public class AccountController {
             int pageSize) {
         return ResponseEntity.ok(
                 accountService.findAllAccounts(pageNumber, pageSize)
-                        .map(AccountDto::from));
+                        .map(AccountSearchResultDto::from));
     }
 
     @GetMapping("/{accountId}")

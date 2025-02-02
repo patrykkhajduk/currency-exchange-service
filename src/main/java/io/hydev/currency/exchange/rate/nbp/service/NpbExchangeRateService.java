@@ -2,7 +2,6 @@ package io.hydev.currency.exchange.rate.nbp.service;
 
 import io.hydev.currency.exchange.domain.model.Currency;
 import io.hydev.currency.exchange.rate.domain.model.ExchangeRate;
-import io.hydev.currency.exchange.rate.domain.model.ExchangeRate.ExchangeRateId;
 import io.hydev.currency.exchange.rate.domain.model.repository.ExchangeRateRepository;
 import io.hydev.currency.exchange.rate.nbp.client.model.NbpExchangeRatesResponse;
 import io.hydev.currency.exchange.utils.NumberUtils;
@@ -23,44 +22,30 @@ public class NpbExchangeRateService {
 
     @Transactional
     //Transactional to ensure that both sides are updated or none in case of error
-    public void upsertExchangeRate(Currency toCurrency, NbpExchangeRatesResponse rates) {
+    public void updateExchangeRate(Currency toCurrency, NbpExchangeRatesResponse rates) {
         if (isExchangeRateActual(toCurrency, rates)) {
-            log.info("Skipping upsert of exchange rate from {} to {}, rate is up to date", Currency.PLN, toCurrency);
+            log.info("Skipping update of exchange rate from {} to {}, rate is up to date", Currency.PLN, toCurrency);
         } else {
-            upsertExchangeRates(toCurrency, rates);
+            storeExchangeRates(toCurrency, rates);
         }
     }
 
     private boolean isExchangeRateActual(Currency toCurrency, NbpExchangeRatesResponse rates) {
-        return exchangeRateRepository.existsByIdAndForDate(
-                new ExchangeRateId(Currency.PLN, toCurrency), rates.getEffectiveDate());
+        return exchangeRateRepository.existsByFromCurrencyAndToCurrencyAndForDate(
+                Currency.PLN, toCurrency, rates.effectiveDate());
     }
 
-    private void upsertExchangeRates(Currency toCurrency, NbpExchangeRatesResponse rates) {
+    private void storeExchangeRates(Currency toCurrency, NbpExchangeRatesResponse rates) {
         BigDecimal fromPlnRate = rates.getForCurrency(toCurrency);
+        createExchangeRate(Currency.PLN, toCurrency, fromPlnRate, rates.effectiveDate());
+
         BigDecimal toCurrencyRate = BigDecimal.ONE.divide(fromPlnRate, NumberUtils.getMathContextForCalculations());
-
-        upsertExchangeRate(Currency.PLN, toCurrency, fromPlnRate, rates.getEffectiveDate());
-        upsertExchangeRate(toCurrency, Currency.PLN, toCurrencyRate, rates.getEffectiveDate());
-    }
-
-    private void upsertExchangeRate(Currency fromCurrency, Currency toCurrency, BigDecimal rate, LocalDate forDate) {
-        exchangeRateRepository.findById(new ExchangeRateId(fromCurrency, toCurrency))
-                .ifPresentOrElse(
-                        exchangeRate -> updateExistingExchangeRate(exchangeRate, rate, forDate),
-                        () -> createExchangeRate(fromCurrency, toCurrency, rate, forDate)
-                );
-    }
-
-    private void updateExistingExchangeRate(ExchangeRate exchangeRate, BigDecimal rate, LocalDate forDate) {
-        exchangeRate.updateRate(rate, forDate);
-        exchangeRateRepository.save(exchangeRate);
-        log.info("Updated exchange rate {} from {} to {} for date {}",
-                rate, exchangeRate.getId().getFromCurrency(), exchangeRate.getId().getToCurrency(), forDate);
+        createExchangeRate(toCurrency, Currency.PLN, toCurrencyRate, rates.effectiveDate());
     }
 
     private void createExchangeRate(Currency fromCurrency, Currency toCurrency, BigDecimal rate, LocalDate forDate) {
-        exchangeRateRepository.save(new ExchangeRate(fromCurrency, toCurrency, rate, forDate));
-        log.info("Created exchange rate {} from {} to {} for date {}", rate, fromCurrency, toCurrency, forDate);
+        ExchangeRate exchangeRate = exchangeRateRepository.save(new ExchangeRate(fromCurrency, toCurrency, rate, forDate));
+        log.info("Created exchange rate {} with value {} from {} to {} for date {}",
+                exchangeRate, rate, fromCurrency, toCurrency, forDate);
     }
 }

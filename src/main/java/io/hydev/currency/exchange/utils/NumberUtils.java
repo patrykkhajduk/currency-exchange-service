@@ -37,6 +37,6 @@ public final class NumberUtils {
     }
 
     public static BigDecimal scale(Currency currency, BigDecimal value) {
-        return value.setScale(getAmountScale(currency), RoundingMode.HALF_EVEN);
+        return value.setScale(getAmountScale(currency), RoundingMode.DOWN);
     }
 }

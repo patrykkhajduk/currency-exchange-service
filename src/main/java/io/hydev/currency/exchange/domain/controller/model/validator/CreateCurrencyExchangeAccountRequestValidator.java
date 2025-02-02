@@ -1,6 +1,7 @@
 package io.hydev.currency.exchange.domain.controller.model.validator;
 
 import io.hydev.currency.exchange.domain.controller.model.CreateAccountRequest;
+import io.hydev.currency.exchange.domain.model.Account;
 import io.hydev.currency.exchange.domain.model.repository.AccountRepository;
 import io.hydev.currency.exchange.domain.exception.ValidationException;
 import lombok.RequiredArgsConstructor;
@@ -19,7 +20,7 @@ public class CreateCurrencyExchangeAccountRequestValidator {
     }
 
     private boolean isOwnerDuplication(CreateAccountRequest request) {
-        return accountRepository.existsByOwnerFirstNameAndOwnerLastName(
-                request.getOwnerFirstName(), request.getOwnerLastName());
+        Account account = request.toAccount();
+        return accountRepository.existsByOwnerFirstNameAndOwnerLastName(account.getOwnerFirstName(), account.getOwnerLastName());
     }
 }

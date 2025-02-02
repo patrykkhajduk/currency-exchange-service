@@ -64,6 +64,6 @@ nbp:
       connection-request-timeout: ${NBP_CONNECTION_REQUEST_TIMEOUT:PT15S}
       response-timeout: ${NBP_RESPONSE_TIMEOUT:PT15S}
   scheduler:
-    upsert-exchange-rates-on-startup: ${NBP_UPSERT_EXCHANGE_RATES_ON_STARTUP:true}
-    upsert-exchange-rates-cron: ${UPSERT_EXCHANGE_RATES_CRON:0 0/15 * * * *}
-    upsert-exchange-rates-lock-at-most-for: ${UPSERT_EXCHANGE_RATES_LOCK_AT_MOST:PT30S}
+    update-exchange-rates-on-startup: ${NBP_UPDATE_EXCHANGE_RATES_ON_STARTUP:false}
+    update-exchange-rates-cron: ${UPDATE_EXCHANGE_RATES_CRON:0 0/15 * * * *}
+    update-exchange-rates-lock-at-most-for: ${UPDATE_EXCHANGE_RATES_LOCK_AT_MOST:PT30S}

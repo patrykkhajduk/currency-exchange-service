@@ -15,6 +15,8 @@ import io.restassured.response.ValidatableResponse
 import org.apache.http.HttpStatus
 import org.hamcrest.Matchers
 
+import java.time.LocalDate
+
 class AccountControllerTest extends BaseIntegrationTest {
 
     def "[POST: /] should create account and return data"() {
@@ -42,12 +44,12 @@ class AccountControllerTest extends BaseIntegrationTest {
 
     def "[POST: /] should not create account when already exists for first name and last name"() {
         given:
-        Account existingAccount = testHelper.storeAccount()
+        Account existingAccount = testHelper.storeAccount(1.23, "Joe", "Doe")
 
         and:
         CreateAccountRequest request = CreateAccountRequest.builder()
-                .ownerFirstName(existingAccount.ownerFirstName)
-                .ownerLastName(existingAccount.ownerLastName)
+                .ownerFirstName(firstName)
+                .ownerLastName(lastName)
                 .initialBalanceInPln(1.23)
                 .build()
 
@@ -63,6 +65,12 @@ class AccountControllerTest extends BaseIntegrationTest {
         List<Account> accounts = testHelper.findAllCurrencyExchangeAccounts()
         accounts.size() == 1
         accounts[0].id == existingAccount.id
+
+        where:
+        firstName | lastName
+        "Joe"     | "Doe"
+        "joe"     | "doe"
+        "JOE"     | "DOE"
     }
 
     def "[GET: /] should return accounts page"() {
@@ -108,10 +116,12 @@ class AccountControllerTest extends BaseIntegrationTest {
         response.statusCode(HttpStatus.SC_NOT_FOUND)
     }
 
-    def "[POST: /{accountId}/exchange] should exchange when account exists and sub account amount is sufficient"() {
+    def "[POST: /{accountId}/exchange] should exchange using lates rate when account exists and sub account amount is sufficient"() {
         given:
-        BigDecimal exchangeRate = 4.05
-        testHelper.storeExchangeRate(Currency.PLN, Currency.USD, exchangeRate)
+        LocalDate now = LocalDate.now()
+        testHelper.storeExchangeRatePair(Currency.PLN, Currency.USD, 3.50, now.minusDays(1))
+        BigDecimal currentExchangeRate = 4.05
+        testHelper.storeExchangeRatePair(Currency.PLN, Currency.USD, currentExchangeRate, now)
 
         and:
         BigDecimal initialBalanceInPln = 4.05
@@ -137,10 +147,7 @@ class AccountControllerTest extends BaseIntegrationTest {
         subAccountsByCurrency[Currency.USD].amount == expectedUsdBalance
 
         and:
-        BigDecimal totalBalance = NumberUtils.scale(
-                Currency.PLN,
-                subAccountsByCurrency[Currency.PLN].amount + subAccountsByCurrency[Currency.USD].amount * exchangeRate)
-        totalBalance == initialBalanceInPln
+        calculateTotalBalanceInPln(subAccountsByCurrency, currentExchangeRate) == initialBalanceInPln
 
         where:
         amountToExchange | expectedPlnBalance | expectedUsdBalance
@@ -148,6 +155,42 @@ class AccountControllerTest extends BaseIntegrationTest {
         2.00             | 2.05               | 0.4938272
         1.00             | 3.05               | 0.2469136
         0.05             | 4.00               | 0.0123457
+    }
+
+    def "[POST: /{accountId}/exchange] should exchange back and forth"() {
+        given:
+        BigDecimal exchangeRate = 4.05
+        testHelper.storeExchangeRatePair(Currency.PLN, Currency.USD, exchangeRate)
+
+        and:
+        BigDecimal initialBalanceInPln = 4.00
+        Account account = testHelper.storeAccount(initialBalanceInPln)
+
+        and:
+        ExchangeCurrenciesRequest plnToUsdExchangeRequest = ExchangeCurrenciesRequest.builder()
+                .fromCurrency(Currency.PLN)
+                .toCurrency(Currency.USD)
+                .amount(1.00)
+                .build()
+
+        and:
+        ExchangeCurrenciesRequest usdToPlnExchangeRequest = ExchangeCurrenciesRequest.builder()
+                .fromCurrency(Currency.USD)
+                .toCurrency(Currency.PLN)
+                .amount(0.24)
+                .build()
+
+        when:
+        triggerExchange(account.id, plnToUsdExchangeRequest).statusCode(HttpStatus.SC_OK)
+        triggerExchange(account.id, usdToPlnExchangeRequest).statusCode(HttpStatus.SC_OK)
+
+        then:
+        Map<Currency, SubAccount> subAccountsByCurrency = getSubAccountsByCurrency(testHelper.findCurrencyExchangeAccount(account.id))
+        subAccountsByCurrency[Currency.PLN].amount == 3.9719999
+        subAccountsByCurrency[Currency.USD].amount == 0.0069136
+
+        and:
+        calculateTotalBalanceInPln(subAccountsByCurrency, exchangeRate) == 3.99 //loss due to rounding
     }
 
     def "[POST: /{accountId}/exchange] should return 404 when account not found"() {
@@ -202,7 +245,7 @@ class AccountControllerTest extends BaseIntegrationTest {
         then:
         response.statusCode(HttpStatus.SC_UNPROCESSABLE_ENTITY)
         response.body("errors", Matchers.hasSize(1))
-        response.body("errors[0]", Matchers.equalTo("Cannot exchange to the same currency"))
+        response.body("errors[0]", Matchers.equalTo("Exchange rate not available for PLN to PLN"))
     }
 
     def "[POST: /{accountId}/exchange] should return 422 when sub account amount is not sufficient"() {
@@ -283,8 +326,8 @@ class AccountControllerTest extends BaseIntegrationTest {
 
     private static void verifyCreatedAccount(Account createdAccount, CreateAccountRequest request) {
         assert createdAccount.lockVersion != null
-        assert createdAccount.ownerFirstName == request.ownerFirstName
-        assert createdAccount.ownerLastName == request.ownerLastName
+        assert createdAccount.ownerFirstName == request.ownerFirstName()
+        assert createdAccount.ownerLastName == request.ownerLastName()
         assert createdAccount.createdDate != null
         assert createdAccount.lastModifiedDate != null
 
@@ -292,7 +335,7 @@ class AccountControllerTest extends BaseIntegrationTest {
         assert subAccountsByCurrency.size() == Currency.values().size()
 
         assert subAccountsByCurrency[Currency.PLN].lockVersion != null
-        assert subAccountsByCurrency[Currency.PLN].amount == request.initialBalanceInPln
+        assert subAccountsByCurrency[Currency.PLN].amount == request.initialBalanceInPln()
         assert subAccountsByCurrency[Currency.PLN].createdDate != null
         assert subAccountsByCurrency[Currency.PLN].lastModifiedDate != null
 
@@ -308,17 +351,20 @@ class AccountControllerTest extends BaseIntegrationTest {
         response.body("content", Matchers.hasSize(expectedAccounts.size()))
         response.body('total_elements', Matchers.equalTo(expectedTotalElements))
         expectedAccounts.eachWithIndex { Account expectedAccount, int index ->
-            verifyAccountResponse(response, expectedAccount, "content[$index].")
+            response.body("content[$index].id", Matchers.equalTo(expectedAccount.id))
+            response.body("content[$index].owner_first_name", Matchers.equalTo(expectedAccount.ownerFirstName))
+            response.body("content[$index].owner_last_name", Matchers.equalTo(expectedAccount.ownerLastName))
+            response.body("content[$index].created_date", IsLocalDateTimeEqual.from(expectedAccount.createdDate))
+            response.body("content[$index].last_modified_date", IsLocalDateTimeEqual.from(expectedAccount.lastModifiedDate))
         }
     }
 
-    private static void verifyAccountResponse(ValidatableResponse response, Account expectedAccount, String prefix = "") {
-        response.body("${prefix}id", Matchers.equalTo(expectedAccount.id))
-        response.body("${prefix}id", Matchers.equalTo(expectedAccount.id))
-        response.body("${prefix}owner_first_name", Matchers.equalTo(expectedAccount.ownerFirstName))
-        response.body("${prefix}owner_last_name", Matchers.equalTo(expectedAccount.ownerLastName))
-        response.body("${prefix}created_date", IsLocalDateTimeEqual.from(expectedAccount.createdDate))
-        response.body("${prefix}last_modified_date", IsLocalDateTimeEqual.from(expectedAccount.lastModifiedDate))
+    private static void verifyAccountResponse(ValidatableResponse response, Account expectedAccount) {
+        response.body("id", Matchers.equalTo(expectedAccount.id))
+        response.body("owner_first_name", Matchers.equalTo(expectedAccount.ownerFirstName))
+        response.body("owner_last_name", Matchers.equalTo(expectedAccount.ownerLastName))
+        response.body("created_date", IsLocalDateTimeEqual.from(expectedAccount.createdDate))
+        response.body("last_modified_date", IsLocalDateTimeEqual.from(expectedAccount.lastModifiedDate))
 
         Map<Currency, SubAccount> subAccountsByCurrency = getSubAccountsByCurrency(expectedAccount)
         Currency.values()
@@ -326,15 +372,19 @@ class AccountControllerTest extends BaseIntegrationTest {
                 .eachWithIndex { Currency currency, int index ->
                     SubAccount expectedSubAccount = subAccountsByCurrency[currency]
                     BigDecimal expectedAmount = NumberUtils.scale(expectedSubAccount.currency, expectedSubAccount.amount)
-                    response.body("${prefix}sub_accounts[$index].id", Matchers.equalTo(expectedSubAccount.id))
-                    response.body("${prefix}sub_accounts[$index].currency", Matchers.equalTo(expectedSubAccount.currency.toString()))
-                    response.body("${prefix}sub_accounts[$index].amount", Matchers.equalTo(expectedAmount.floatValue()))
-                    response.body("${prefix}sub_accounts[$index].created_date", IsLocalDateTimeEqual.from(expectedSubAccount.createdDate))
-                    response.body("${prefix}sub_accounts[$index].last_modified_date", IsLocalDateTimeEqual.from(expectedSubAccount.lastModifiedDate))
+                    response.body("sub_accounts[$index].id", Matchers.equalTo(expectedSubAccount.id))
+                    response.body("sub_accounts[$index].currency", Matchers.equalTo(expectedSubAccount.currency.toString()))
+                    response.body("sub_accounts[$index].amount", Matchers.equalTo(expectedAmount.floatValue()))
+                    response.body("sub_accounts[$index].created_date", IsLocalDateTimeEqual.from(expectedSubAccount.createdDate))
+                    response.body("sub_accounts[$index].last_modified_date", IsLocalDateTimeEqual.from(expectedSubAccount.lastModifiedDate))
                 }
     }
 
     private static Map<Currency, SubAccount> getSubAccountsByCurrency(Account account) {
         return account.subAccounts.collectEntries() { [it.currency, it] }
+    }
+
+    private static BigDecimal calculateTotalBalanceInPln(Map<Currency, SubAccount> subAccountsByCurrency, BigDecimal exchangeRate) {
+        NumberUtils.scale(Currency.PLN, subAccountsByCurrency[Currency.PLN].amount + subAccountsByCurrency[Currency.USD].amount * exchangeRate)
     }
 }

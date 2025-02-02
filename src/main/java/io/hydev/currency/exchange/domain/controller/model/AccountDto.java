@@ -1,22 +1,23 @@
 package io.hydev.currency.exchange.domain.controller.model;
 
-import io.hydev.currency.exchange.domain.model.Currency;
 import io.hydev.currency.exchange.domain.model.Account;
 import io.hydev.currency.exchange.domain.model.Account.SubAccount;
+import io.hydev.currency.exchange.domain.model.Currency;
 import io.hydev.currency.exchange.utils.NumberUtils;
-import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Getter;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.Comparator;
 import java.util.List;
 
-@AllArgsConstructor
 @Builder
-@Getter
-public class AccountDto {
+public record AccountDto(String id,
+                         String ownerFirstName,
+                         String ownerLastName,
+                         List<SubAccountBalanceDto> subAccounts,
+                         LocalDateTime createdDate,
+                         LocalDateTime lastModifiedDate) {
 
     public static AccountDto from(Account account) {
         return AccountDto.builder()
@@ -26,24 +27,19 @@ public class AccountDto {
                 .subAccounts(account.getSubAccounts()
                         .stream()
                         .map(SubAccountBalanceDto::from)
-                        .sorted(Comparator.comparing(SubAccountBalanceDto::getCurrency))
+                        .sorted(Comparator.comparing(SubAccountBalanceDto::currency))
                         .toList())
                 .createdDate(account.getCreatedDate())
                 .lastModifiedDate(account.getLastModifiedDate())
                 .build();
     }
 
-    private String id;
-    private String ownerFirstName;
-    private String ownerLastName;
-    private List<SubAccountBalanceDto> subAccounts;
-    private LocalDateTime createdDate;
-    private LocalDateTime lastModifiedDate;
-
-    @AllArgsConstructor
     @Builder
-    @Getter
-    public static class SubAccountBalanceDto {
+    public record SubAccountBalanceDto(String id,
+                                       Currency currency,
+                                       BigDecimal amount,
+                                       LocalDateTime createdDate,
+                                       LocalDateTime lastModifiedDate) {
 
         public static SubAccountBalanceDto from(SubAccount balance) {
             return SubAccountBalanceDto.builder()
@@ -54,11 +50,7 @@ public class AccountDto {
                     .lastModifiedDate(balance.getLastModifiedDate())
                     .build();
         }
-
-        private String id;
-        private Currency currency;
-        private BigDecimal amount;
-        private LocalDateTime createdDate;
-        private LocalDateTime lastModifiedDate;
     }
 }
+
+

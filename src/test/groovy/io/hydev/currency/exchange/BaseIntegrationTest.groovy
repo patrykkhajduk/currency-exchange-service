@@ -73,6 +73,6 @@ abstract class BaseIntegrationTest extends Specification {
         registry.add("spring.liquibase.password", () -> postgresContainer.getPassword())
         registry.add("nbp.client.connection-properties.base-url", () -> "http://localhost:$WIREMOCK_PORT")
         registry.add("nbp.scheduler.update-exchange-rates-cron", () -> "0 0 0 * * *")
-        registry.add("nbp.scheduler.upsert-exchange-rates-on-startup", () -> false)
+        registry.add("nbp.scheduler.update-exchange-rates-on-startup", () -> false)
     }
 }
