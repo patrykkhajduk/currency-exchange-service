@@ -51,3 +51,19 @@ springdoc:
   swagger-ui:
     enabled: ${SWAGGER_ENABLED:false}
     path: /api-spec/swagger-ui.html
+
+shedlock:
+  global.lock-at-most-for: PT60S
+
+nbp:
+  client:
+    connection-properties:
+      base-url: ${NBP_BASE_URL:}
+      max-connections-per-route: ${NBP_MAX_CONNECTIONS_PER_ROUTE:10}
+      max-total-connections: ${NBP_MAX_TOTAL_CONNECTIONS:50}
+      connection-request-timeout: ${NBP_CONNECTION_REQUEST_TIMEOUT:PT15S}
+      response-timeout: ${NBP_RESPONSE_TIMEOUT:PT15S}
+  scheduler:
+    upsert-exchange-rates-on-startup: ${NBP_UPSERT_EXCHANGE_RATES_ON_STARTUP:true}
+    upsert-exchange-rates-cron: ${UPSERT_EXCHANGE_RATES_CRON:0 0/15 * * * *}
+    upsert-exchange-rates-lock-at-most-for: ${UPSERT_EXCHANGE_RATES_LOCK_AT_MOST:PT30S}

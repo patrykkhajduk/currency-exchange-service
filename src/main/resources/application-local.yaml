@@ -13,3 +13,8 @@ springdoc:
     enabled: true
   swagger-ui:
     enabled: true
+
+nbp:
+  client:
+    connection-properties:
+      base-url: ${NBP_BASE_URL:https://api.nbp.pl}

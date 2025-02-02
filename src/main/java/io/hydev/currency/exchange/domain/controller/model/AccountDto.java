@@ -1,8 +1,8 @@
-package io.hydev.currency.exchange.controller.model;
+package io.hydev.currency.exchange.domain.controller.model;
 
 import io.hydev.currency.exchange.domain.model.Currency;
-import io.hydev.currency.exchange.domain.model.CurrencyExchangeAccount;
-import io.hydev.currency.exchange.domain.model.CurrencyExchangeAccount.CurrencyExchangeAccountBalance;
+import io.hydev.currency.exchange.domain.model.Account;
+import io.hydev.currency.exchange.domain.model.Account.SubAccount;
 import io.hydev.currency.exchange.utils.NumberUtils;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -16,17 +16,17 @@ import java.util.List;
 @AllArgsConstructor
 @Builder
 @Getter
-public class CurrencyExchangeAccountDto {
+public class AccountDto {
 
-    public static CurrencyExchangeAccountDto from(CurrencyExchangeAccount account) {
-        return CurrencyExchangeAccountDto.builder()
+    public static AccountDto from(Account account) {
+        return AccountDto.builder()
                 .id(account.getId())
                 .ownerFirstName(account.getOwnerFirstName())
                 .ownerLastName(account.getOwnerLastName())
-                .balances(account.getBalances()
+                .subAccounts(account.getSubAccounts()
                         .stream()
-                        .map(CurrencyExchangeAccountBalanceDto::from)
-                        .sorted(Comparator.comparing(CurrencyExchangeAccountBalanceDto::getCurrency))
+                        .map(SubAccountBalanceDto::from)
+                        .sorted(Comparator.comparing(SubAccountBalanceDto::getCurrency))
                         .toList())
                 .createdDate(account.getCreatedDate())
                 .lastModifiedDate(account.getLastModifiedDate())
@@ -36,20 +36,20 @@ public class CurrencyExchangeAccountDto {
     private String id;
     private String ownerFirstName;
     private String ownerLastName;
-    private List<CurrencyExchangeAccountBalanceDto> balances;
+    private List<SubAccountBalanceDto> subAccounts;
     private LocalDateTime createdDate;
     private LocalDateTime lastModifiedDate;
 
     @AllArgsConstructor
     @Builder
     @Getter
-    public static class CurrencyExchangeAccountBalanceDto {
+    public static class SubAccountBalanceDto {
 
-        public static CurrencyExchangeAccountBalanceDto from(CurrencyExchangeAccountBalance balance) {
-            return CurrencyExchangeAccountBalanceDto.builder()
+        public static SubAccountBalanceDto from(SubAccount balance) {
+            return SubAccountBalanceDto.builder()
                     .id(balance.getId())
                     .currency(balance.getCurrency())
-                    .amount(NumberUtils.scale(balance.getAmount()))
+                    .amount(NumberUtils.scale(balance.getCurrency(), balance.getAmount()))
                     .createdDate(balance.getCreatedDate())
                     .lastModifiedDate(balance.getLastModifiedDate())
                     .build();

@@ -2,4 +2,8 @@ databaseChangeLog:
   - include:
       file: classpath:/db/changelog/changelogs/db.changelog-envers-base-tables.sql
   - include:
-      file: classpath:/db/changelog/changelogs/db.changelog-currency-exchange-account.sql
+      file: classpath:/db/changelog/changelogs/db.changelog-shedlock.sql
+  - include:
+      file: classpath:/db/changelog/changelogs/db.changelog-account.sql
+  - include:
+      file: classpath:/db/changelog/changelogs/db.changelog-exchange-rate.sql

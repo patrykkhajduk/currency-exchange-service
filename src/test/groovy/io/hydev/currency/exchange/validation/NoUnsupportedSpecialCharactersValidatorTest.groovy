@@ -7,7 +7,7 @@ import spock.lang.Subject
 class NoUnsupportedSpecialCharactersValidatorTest extends Specification {
 
     @Subject
-    NoUnsupportedSpecialCharactersValidator validator = new NoUnsupportedSpecialCharactersValidator()
+    NoUnsupportedSpecialCharactersValidator validator = new NoUnsupportedSpecialCharactersValidator("[-]*")
 
     def "isValid should pass null value"() {
         expect:

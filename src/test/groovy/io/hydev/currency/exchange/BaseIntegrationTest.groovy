@@ -1,9 +1,10 @@
 package io.hydev.currency.exchange
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.github.tomakehurst.wiremock.WireMockServer
+import com.github.tomakehurst.wiremock.client.WireMock
+import io.hydev.currency.exchange.utils.TestHelper
 import io.restassured.RestAssured
-import io.restassured.config.ObjectMapperConfig
-import io.restassured.config.RestAssuredConfig
 import io.restassured.filter.log.RequestLoggingFilter
 import io.restassured.filter.log.ResponseLoggingFilter
 import org.springframework.beans.factory.annotation.Autowired
@@ -21,6 +22,13 @@ import static org.springframework.boot.test.context.SpringBootTest.WebEnvironmen
 @SpringBootTest(classes = CurrencyExchangeApplication.class, webEnvironment = RANDOM_PORT)
 abstract class BaseIntegrationTest extends Specification {
 
+    private static final int WIREMOCK_PORT = new Random().nextInt(1000, 8000)
+    //Initializing Wiremock server as const to have consistency between application context (properties) and multiple test class runs
+    private static final WireMockServer wireMockServer = new WireMockServer(WIREMOCK_PORT).with {
+        it.start()
+        return it
+    }
+
     @Shared
     public static final PostgreSQLContainer postgresContainer = new PostgreSQLContainer("postgres:17.2")
             .withDatabaseName("currency-exchange")
@@ -36,17 +44,21 @@ abstract class BaseIntegrationTest extends Specification {
     @Autowired
     protected ObjectMapper objectMapper
 
+    @Autowired
+    protected TestHelper testHelper
+
     def setupSpec() {
         postgresContainer.start()
+        WireMock.configureFor(WIREMOCK_PORT);
     }
 
     def setup() {
         RestAssured.port = port
         RestAssured.baseURI = "http://localhost:$port$contextPath"
-//        RestAssuredConfig.config()
-//                .objectMapperConfig(new ObjectMapperConfig()
-//                        .jackson2ObjectMapperFactory((aClass, s) -> objectMapper))
         RestAssured.filters(new RequestLoggingFilter(), new ResponseLoggingFilter());
+
+        wireMockServer.resetAll()
+        testHelper.clearData()
     }
 
     @DynamicPropertySource
@@ -59,5 +71,8 @@ abstract class BaseIntegrationTest extends Specification {
         registry.add("spring.liquibase.url", () -> postgresContainer.getJdbcUrl())
         registry.add("spring.liquibase.user", () -> postgresContainer.getUsername())
         registry.add("spring.liquibase.password", () -> postgresContainer.getPassword())
+        registry.add("nbp.client.connection-properties.base-url", () -> "http://localhost:$WIREMOCK_PORT")
+        registry.add("nbp.scheduler.update-exchange-rates-cron", () -> "0 0 0 * * *")
+        registry.add("nbp.scheduler.upsert-exchange-rates-on-startup", () -> false)
     }
 }

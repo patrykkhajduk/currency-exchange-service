@@ -1,4 +1,4 @@
-package io.hydev.currency.exchange.exception;
+package io.hydev.currency.exchange.domain.exception;
 
 public class ValidationException extends RuntimeException {
 

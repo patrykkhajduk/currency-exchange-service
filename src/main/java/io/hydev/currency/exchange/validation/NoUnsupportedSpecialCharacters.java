@@ -15,6 +15,8 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 public @interface NoUnsupportedSpecialCharacters {
 
+    String allowedSpecialCharactersRegexp() default "";
+
     String message() default "Value has invalid characters";
 
     Class<?>[] groups() default {};

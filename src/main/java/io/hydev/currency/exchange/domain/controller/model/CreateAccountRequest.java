@@ -1,7 +1,7 @@
-package io.hydev.currency.exchange.controller.model;
+package io.hydev.currency.exchange.domain.controller.model;
 
 import io.hydev.currency.exchange.domain.model.Currency;
-import io.hydev.currency.exchange.domain.model.CurrencyExchangeAccount;
+import io.hydev.currency.exchange.domain.model.Account;
 import io.hydev.currency.exchange.utils.NumberUtils;
 import io.hydev.currency.exchange.validation.NoUnsupportedSpecialCharacters;
 import jakarta.validation.constraints.Digits;
@@ -13,6 +13,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.apache.commons.text.WordUtils;
 import org.hibernate.validator.constraints.Length;
 
 import java.math.BigDecimal;
@@ -21,7 +22,7 @@ import java.math.BigDecimal;
 @AllArgsConstructor
 @Getter
 @Builder
-public class CreateCurrencyExchangeAccountRequest {
+public class CreateAccountRequest {
 
     @NotBlank(message = "Owner first name is mandatory")
     @Length(max = 64, message = "Owner first name must have at most {value} characters")
@@ -30,7 +31,7 @@ public class CreateCurrencyExchangeAccountRequest {
 
     @NotBlank(message = "Owner last name is mandatory")
     @Length(max = 64, message = "Owner last name must have at most {value} characters")
-    @NoUnsupportedSpecialCharacters(message = "Owner last name contains invalid characters")
+    @NoUnsupportedSpecialCharacters(allowedSpecialCharactersRegexp = "[-]*", message = "Owner last name contains invalid characters")
     private String ownerLastName;
 
     @NotNull(message = "Initial balance in PLN is mandatory")
@@ -38,7 +39,11 @@ public class CreateCurrencyExchangeAccountRequest {
     @Digits(integer = 9, fraction = 2, message = "Initial balance in PLN must be less than trillion and have at most 2 decimal places")
     private BigDecimal initialBalanceInPln;
 
-    public CurrencyExchangeAccount toAccount() {
-        return new CurrencyExchangeAccount(ownerFirstName, ownerLastName, Currency.PLN, NumberUtils.scale(initialBalanceInPln));
+    public Account toAccount() {
+        return new Account(
+                WordUtils.capitalize(ownerFirstName),
+                WordUtils.capitalize(ownerLastName, ' ', '-'),
+                Currency.PLN,
+                NumberUtils.scale(Currency.PLN, initialBalanceInPln));
     }
 }
