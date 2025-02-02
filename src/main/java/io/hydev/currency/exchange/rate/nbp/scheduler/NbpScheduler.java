@@ -4,6 +4,7 @@ import io.hydev.currency.exchange.domain.model.Currency;
 import io.hydev.currency.exchange.rate.nbp.client.NbpClient;
 import io.hydev.currency.exchange.rate.nbp.client.model.NbpExchangeRatesResponse;
 import io.hydev.currency.exchange.rate.nbp.service.NpbExchangeRateService;
+import io.micrometer.tracing.annotation.NewSpan;
 import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
