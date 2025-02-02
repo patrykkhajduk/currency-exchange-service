@@ -1,6 +1,7 @@
 package io.hydev.currency.exchange.domain.model;
 
 import io.hydev.currency.exchange.domain.exception.CurrencyExchangeException;
+import io.hydev.currency.exchange.rate.domain.model.ExchangeRate;
 import io.hydev.currency.exchange.utils.NumberUtils;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Entity;
@@ -76,31 +77,30 @@ public class Account {
                 .toList();
     }
 
-    public void exchange(Currency fromCurrency, Currency toCurrency, BigDecimal amount, BigDecimal exchangeRate) {
-        if (fromCurrency == toCurrency) {
-            throw new CurrencyExchangeException("Cannot exchange to the same currency");
-        }
+    public void exchange(Currency fromCurrency, Currency toCurrency, BigDecimal amount, ExchangeRate exchangeRate) {
         SubAccount fromSubAccount = getSubAccount(fromCurrency);
         SubAccount toSubAccount = getSubAccount(toCurrency);
         if (fromSubAccount.getAmount().compareTo(amount) < 0) {
             throw new CurrencyExchangeException("Not enough funds to exchange");
         }
         BigDecimal minimumExchangeAmount = NumberUtils.getMinimumExchangeAmount(toCurrency)
-                .multiply(exchangeRate, NumberUtils.getMathContextForCalculations());
+                .multiply(exchangeRate.getRate(), NumberUtils.getMathContextForCalculations());
         if (amount.compareTo(minimumExchangeAmount) < 0) {
             throw new CurrencyExchangeException("Amount is less than required for minimum exchange");
         }
-        BigDecimal obtainedAmount = amount.divide(exchangeRate, NumberUtils.getMathContextForCalculations());
+        BigDecimal obtainedAmount = amount.divide(exchangeRate.getRate(), NumberUtils.getMathContextForCalculations());
         BigDecimal toSubAccountAmountBeforeExchange = toSubAccount.getAmount();
         toSubAccount.addAmount(obtainedAmount);
 
-        BigDecimal exchangedAmount = obtainedAmount.multiply(exchangeRate, NumberUtils.getMathContextForCalculations());
+        BigDecimal exchangedAmount = obtainedAmount.multiply(exchangeRate.getRate(), NumberUtils.getMathContextForCalculations());
         BigDecimal fromSubAccountAmountBeforeExchange = fromSubAccount.getAmount();
         fromSubAccount.subtractAmount(exchangedAmount);
 
-        log.info("Exchanged {} {} (sub account balance: {} -> {}) for {} {} (sub account balance: {} -> {})",
+        //For now just logging the operation but this would be a good place to send a message with the exchange details
+        log.info("Exchanged {} {} (sub account balance: {} -> {}) for {} {} (sub account balance: {} -> {}), used rate: {}",
                 exchangedAmount, fromCurrency, fromSubAccountAmountBeforeExchange, fromSubAccount.getAmount(),
-                obtainedAmount, toCurrency, toSubAccountAmountBeforeExchange, toSubAccount.getAmount());
+                obtainedAmount, toCurrency, toSubAccountAmountBeforeExchange, toSubAccount.getAmount(),
+                exchangeRate.getId());
     }
 
     private SubAccount getSubAccount(Currency currency) {

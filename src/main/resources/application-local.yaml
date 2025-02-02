@@ -17,6 +17,7 @@ springdoc:
 nbp:
   client:
     connection-properties:
-      base-url: ${NBP_BASE_URL:https://api.nbp.pl}
+      base-url: https://api.nbp.pl
   scheduler:
-    upsert-exchange-rates-cron: ${UPSERT_EXCHANGE_RATES_CRON:0/15 * * * * *}
+    update-exchange-rates-on-startup: true
+    update-exchange-rates-cron: 0/15 * * * * *

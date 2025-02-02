@@ -12,8 +12,7 @@ CREATE TABLE IF NOT EXISTS account
     last_modified_date                      timestamp,
     CONSTRAINT pk_account PRIMARY KEY (id)
 );
-CREATE INDEX IF NOT EXISTS account_owner_first_name_index ON account (owner_first_name);
-CREATE INDEX IF NOT EXISTS account_owner_last_name_index ON account (owner_last_name);
+CREATE UNIQUE INDEX IF NOT EXISTS account_owner_first_last_name_index ON account (owner_first_name, owner_last_name);
 
 CREATE TABLE IF NOT EXISTS account_aud
 (

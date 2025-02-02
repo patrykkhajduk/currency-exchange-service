@@ -17,6 +17,7 @@ import org.apache.commons.text.WordUtils;
 import org.hibernate.validator.constraints.Length;
 
 import java.math.BigDecimal;
+import java.util.Locale;
 
 @NoArgsConstructor(access = AccessLevel.PACKAGE)
 @AllArgsConstructor
@@ -41,8 +42,8 @@ public class CreateAccountRequest {
 
     public Account toAccount() {
         return new Account(
-                WordUtils.capitalize(ownerFirstName),
-                WordUtils.capitalize(ownerLastName, ' ', '-'),
+                WordUtils.capitalize(ownerFirstName.toLowerCase(Locale.ROOT)),
+                WordUtils.capitalize(ownerLastName.toLowerCase(Locale.ROOT), ' ', '-'),
                 Currency.PLN,
                 NumberUtils.scale(Currency.PLN, initialBalanceInPln));
     }

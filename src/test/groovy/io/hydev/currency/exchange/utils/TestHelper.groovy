@@ -53,6 +53,11 @@ class TestHelper {
         return exchangeRateRepository.save(new ExchangeRate(fromCurrency, toCurrency, rate, forDate))
     }
 
+    void storeExchangeRatePair(Currency fromCurrency, Currency toCurrency, BigDecimal rate, LocalDate forDate = LocalDate.now()) {
+        exchangeRateRepository.save(new ExchangeRate(fromCurrency, toCurrency, rate, forDate))
+        exchangeRateRepository.save(new ExchangeRate(toCurrency, fromCurrency, 1.00.divide(rate, NumberUtils.getMathContextForCalculations()), forDate))
+    }
+
     List<ExchangeRate> findAllExchangeRates() {
         return exchangeRateRepository.findAll()
     }
