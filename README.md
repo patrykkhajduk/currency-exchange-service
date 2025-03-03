@@ -11,7 +11,7 @@ The goal of the task is to develop an application providing a REST API that allo
 - The application should provide a REST API for exchanging money between PLN and USD (both PLN to USD and USD to PLN), using the current exchange rate obtained from the public NBP API.
 - The application should provide a REST API to retrieve account details and its current balance in PLN and USD.
 
-## Requirements
+## Requirements to run service
 - Java 21
 - Groovy
 - Gradle
