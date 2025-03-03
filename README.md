@@ -1,5 +1,16 @@
 # Currency Exchange Service
 
+## Goal
+The goal of the task is to develop an application providing a REST API that allows account creation and currency exchange between PLN and USD.
+
+## Functional requirements:
+- The application provides a REST API that allows the creation of a currency account.
+- When creating an account, an initial account balance in PLN must be specified.
+- The application requires the user to provide their first and last name during account creation.
+- When creating an account, the application generates an account identifier, which should be used for further API calls.
+- The application should provide a REST API for exchanging money between PLN and USD (both PLN to USD and USD to PLN), using the current exchange rate obtained from the public NBP API.
+- The application should provide a REST API to retrieve account details and its current balance in PLN and USD.
+
 ## Requirements
 - Java 21
 - Groovy
